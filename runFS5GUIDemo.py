@@ -252,7 +252,6 @@ if __name__ == '__main__':
     wp.rand_init(42)
     simState = simulationStage(inputs,Vs,Fs.flatten(),delta_particles,delta_a)
 
-
     for pp_step in range(inputs.max_steps_per_stage//inputs.solverUpdates):
         # simState.state_init_frame=simState.state_0
         print(f'GPU Compute...frame {pp_step}')
@@ -269,3 +268,5 @@ if __name__ == '__main__':
 
         if inputs.swellingRatio > 0:
             simState.swell(inputs)
+
+        # save particle positions and masses 
