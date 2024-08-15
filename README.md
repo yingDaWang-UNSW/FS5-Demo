@@ -4,6 +4,7 @@ FS5 is the 5th generation of Beck Engineering’s Cave Flow Simulators. It is ba
 
 It is written in Python, allowing for faster prototyping and modification, more advanced particle flow control, and leverages the Nvidia Warp framework to achieve high performance.
 
+This is an open source demo of FS5, which runs on single GPUs
 
 ## Installation
 
