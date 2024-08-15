@@ -6,6 +6,7 @@ import pdb
 import os
 import argparse
 import trimesh
+import meshio
 import utils as utl
 from utils import fs5Model
 from warpOverrides import fs5WarpOverrides
@@ -70,7 +71,7 @@ class simulationStage:
             m=inputs.particleMass
             r=inputs.radius/inputs.xRef
                 
-            builder.add_particle(pos=(particles[i,0],particles[i,1], particles[i,2]), vel=(0.0, 0.0, 0.0), mass=m, radius=r, flags = activeIndices[i])
+            builder.add_particle(pos=(particles[i,0],particles[i,1], particles[i,2]), vel=(0.0, 0.0, 0.0), mass=m*activeIndices[i], radius=r, flags = activeIndices[i])
         self.model = builder.finalize() 
 
         self.model.gravity = np.array((0.0, -9.81/inputs.xRef, 0.0)) 
@@ -142,6 +143,42 @@ class simulationStage:
         if self.swelling_rotation>=inputs.swelling_rotation_max:
             self.swelling_rotation=0
 
+
+def process_mesh(ply_path, voxel_size, jitter):
+    current_path = os.path.dirname(os.path.realpath(__file__))
+    os.chdir(current_path)
+    cuda_voxelizer_path = r".\utils\cuda_voxelizer\cuda_voxelizer.exe"
+
+    # Load the mesh using trimesh
+    mesh = trimesh.load(ply_path, force='mesh')
+    # Calculate max size and mesh center
+    max_size = max(mesh.extents)  # trimesh way of getting maximum extents of the mesh
+    mesh_centre = mesh.bounds.mean(axis=0)
+    max_size = int(np.ceil(max_size / voxel_size))
+    
+    # Create command string for external tool
+    cmd_str = "{} -f {} -s {} -solid -o obj_points".format(cuda_voxelizer_path, ply_path, str(max_size))
+    print(cmd_str)
+    os.system(cmd_str)
+    
+    # Process the resulting point cloud
+    pointcloud_filename = ply_path + "_{}_pointcloud.obj".format(str(max_size))
+    print("reading " + os.path.basename(pointcloud_filename) + "...")
+    points = np.loadtxt(pointcloud_filename, usecols=(1, 2, 3)) * voxel_size
+    points_centre = (points.max(axis=0) + points.min(axis=0)) / 2
+    
+    # Save processed points to a CSV file
+    # csv_filename = ply_path + "_voxelSize={}.csv".format(str(voxel_size))
+    # print("generating " + os.path.basename(csv_filename) + "...")
+    points = points - points_centre + mesh_centre
+    # np.savetxt(csv_filename, points, fmt='%.8f', delimiter=',')
+    # print(csv_filename)
+    if jitter > 0:
+        jitter = (voxel_size) * jitter 
+        _j = generate_displacements_np(jitter, len(points))
+    points = points +_j
+    return points[:,[0,2,1]]
+
 def read_ply(filename):
     with open(filename, 'r') as f:
         lines = f.readlines()
@@ -209,69 +246,77 @@ def fill_mesh_with_particles(Vp, Fp, radius, jitter):
     
     return inside_positions, grid_points.shape[0]
 
-if __name__ == '__main__':
-    inputs = fs5InputReader.fs5args()
-    print(inputs)  # Proceed with using the args in your application
+# if __name__ == '__main__':
+inputs = fs5InputReader.fs5args()
+print(inputs)  # Proceed with using the args in your application
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = inputs.gpuIDs
+os.environ["CUDA_VISIBLE_DEVICES"] = inputs.gpuIDs
 
-    # load in the ply meshes
+# load in the ply meshes
 
-    Vs, Fs = read_ply(inputs.surfaceMesh)
-    Vp, Fp = read_ply(inputs.particleMesh)
+Vs, Fs = read_ply(inputs.surfaceMesh)
+Vp, Fp = read_ply(inputs.particleMesh)
 
-    Vs=Vs[:,[0,2,1]]
-
-    Vp=Vp[:,[0,2,1]]
-    # scale if needed
-
+Vs=Vs[:,[0,2,1]]
+Vp=Vp[:,[0,2,1]]
+# scale if needed
 
 
 
-    # create the particle set
-    positions, nbox = fill_mesh_with_particles(Vp, Fp, inputs.radius, inputs.jitter)
-    print(f"Number of initial particles: {positions.shape[0]}/{nbox}")
-    # print("Positions of particles inside the mesh:", positions)
+# create the particle set
+positions = process_mesh(inputs.particleMesh,inputs.radius*2, inputs.jitter)
+# positions, nbox = fill_mesh_with_particles(Vp, Fp, inputs.radius, inputs.jitter)
+print(f"Number of initial particles: {positions.shape[0]}")
+# print("Positions of particles inside the mesh:", positions)
 
-    # create the swelling dataset
+# create the swelling dataset
+# if inputs.swellingRatio > 0:
+#     total_particles_to_add = int((len(positions)+1) * inputs.swellingRatio)
+#     swell_particles = np.sort(np.random.choice(len(positions)-1, total_particles_to_add, replace=False)) + 1
+#     swell_particles += np.arange(len(swell_particles))
+
+
+#     out_dim = len(positions)+len(swell_particles)
+#     delta_a = np.ones(out_dim, dtype=bool)
+#     delta_a[swell_particles] = 0
+#     delta_particles = np.zeros((out_dim, 3))
+#     delta_particles[delta_a] = positions
+#     delta_particles[swell_particles] = delta_particles[swell_particles-1]
+# else:
+delta_a = np.ones(positions.shape[0], dtype=bool)
+delta_particles=positions
+
+# set up the warp simulation
+wp.config.kernel_cache_dir = os.path.join("tmp", f"warpcache")
+
+wp.init()
+wp.rand_init(42)
+simState = simulationStage(inputs,Vs,Fs.flatten(),delta_particles,delta_a)
+
+for pp_step in range(inputs.max_steps_per_stage//inputs.solverUpdates):
+    # simState.state_init_frame=simState.state_0
+    print(f'GPU Compute...frame {pp_step}')
+    # simulate
+    for s in range(inputs.solverUpdates):
+        simState.update(inputs)
+
+        if np.mod(s,inputs.framesPerRuntimeRender)==0:
+            if inputs.runtimeRendering:
+                simState.render(inputs)
+        if pp_step==0 and s==0:
+            simState.state_0.particle_qd.zero_()
+            simState.state_1.particle_qd.zero_()
+
     # if inputs.swellingRatio > 0:
-    #     total_particles_to_add = int((len(positions)+1) * inputs.swellingRatio)
-    #     swell_particles = np.sort(np.random.choice(len(positions)-1, total_particles_to_add, replace=False)) + 1
-    #     swell_particles += np.arange(len(swell_particles))
+    #     simState.swell(inputs)
 
-
-    #     out_dim = len(positions)+len(swell_particles)
-    #     delta_a = np.ones(out_dim, dtype=bool)
-    #     delta_a[swell_particles] = 0
-    #     delta_particles = np.zeros((out_dim, 3))
-    #     delta_particles[delta_a] = positions
-    #     delta_particles[swell_particles] = delta_particles[swell_particles-1]
-    # else:
-    delta_a = np.ones(positions.shape[0], dtype=bool)
-    delta_particles=positions
-
-    # set up the warp simulation
-    wp.config.kernel_cache_dir = os.path.join("tmp", f"warpcache")
-
-    wp.init()
-    wp.rand_init(42)
-    simState = simulationStage(inputs,Vs,Fs.flatten(),delta_particles,delta_a)
-
-    for pp_step in range(inputs.max_steps_per_stage//inputs.solverUpdates):
-        # simState.state_init_frame=simState.state_0
-        print(f'GPU Compute...frame {pp_step}')
-        # simulate
-        for s in range(inputs.solverUpdates):
-            simState.update(inputs)
-
-            if np.mod(s,inputs.framesPerRuntimeRender)==0:
-                if inputs.runtimeRendering:
-                    simState.render(inputs)
-            if pp_step==0 and s==0:
-                simState.state_0.particle_qd.zero_()
-                simState.state_1.particle_qd.zero_()
-
-        # if inputs.swellingRatio > 0:
-        #     simState.swell(inputs)
-
-        # save particle positions and masses 
+    # save particle positions and masses periodically
+    if np.mod(pp_step,10)==0:
+        filename = f"particles_{pp_step+1:04d}.bin"
+        particle_q = simState.state_0.particle_q.numpy()
+        particle_inv_mass = simState.model.particle_inv_mass.numpy() 
+        particle_inv_mass = particle_inv_mass.reshape(-1, 1)
+        data = np.hstack((particle_q, particle_inv_mass)) 
+        data.tofile(filename)
+        print(f"Saved {filename}")
+# data_read = np.fromfile('particles_0001.bin', dtype=np.float32).reshape(-1, 4)

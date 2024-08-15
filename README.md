@@ -10,4 +10,8 @@ This is an open source demo of FS5, which runs on single GPUs. It is capable of 
 
 1.  install nvidia drivers and cuda toolkit (via website), confirm installation with nvidia-smi command
 2.  conda install python
-3.  pip install warp-lang pyglet trimesh Rtree gooey matplotlib
+3.  pip install warp-lang pyglet trimesh meshio Rtree gooey matplotlib
+
+## Known bugs
+
+1. the file path to your ply files cannot contain spaces, this is a limitation of a legacy voxeliser.

@@ -1,0 +1,12 @@
+for a 150x150x200 mesh:
+
+cuda_voxelizer.exe -f ../R25LARGE.ply -s 100 -solid -o obj_points
+
+unit length is voxelSize, in this case 2.  max dimension in x,y,z is 200, so 200/2 = 100.
+
+Next, apply the following in cloud compare:
+
+1. translate the voxels so that the centre is the same as the original mesh.
+2. scale by unit length, tick <same scale for all dimensions> and <keep entity in place>.
+3. remove extraneous bottom layer via segmentation.
+4. save as csv, coordinate precision=8.

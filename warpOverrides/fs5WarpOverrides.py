@@ -352,6 +352,8 @@ def my_solve_particle_shape_contacts(
         delta_t = wp.cross(r, delta_total)
         wp.atomic_sub(body_delta, body_index, wp.spatial_vector(delta_t, delta_total))
 utl.integrator_xpbd.solve_particle_shape_contacts = my_solve_particle_shape_contacts
+
+        
 @wp.kernel
 def my_create_soft_contacts(
     particle_x: wp.array(dtype=wp.vec3),
