@@ -1,3 +1,5 @@
 tmp*
 utils/__pycache__/*
 warpOverrides/__pycache__/*
+particles_*.bin
+utils/__pycache__/fs5InputReader.cpython-312.pyc
