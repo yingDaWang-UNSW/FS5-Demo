@@ -25,6 +25,18 @@ staticParticleVelocityThresholdRatio=inputs.staticParticleVelocityThresholdRatio
 meshSidedFlag=float(inputs.meshSidedFlag)
 
 @wp.kernel
+def increaseRadius(
+    particle_radius: wp.array(dtype=float),
+    dr: float,
+    maxRad: float,
+):
+    tid = wp.tid()
+    radius = particle_radius[tid]
+    if radius<maxRad:
+        deltaRad=radius*dr
+        particle_radius[tid]=particle_radius[tid]+deltaRad
+
+@wp.kernel
 def sleepParticles(
     sleepThreshold: float,
     particle_flags: wp.array(dtype=wp.uint32),

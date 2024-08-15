@@ -104,9 +104,14 @@ class simulationStage:
                 
             if inputs.swellingRatio > 0:
                 # only perform swelling and radius expansion on the non dump particles
-                wp.launch(kernel=fs5WarpOverrides.swellParticlesStage2, 
+                # wp.launch(kernel=fs5WarpOverrides.swellParticlesStage2, 
+                #         dim=self.model.particle_count, 
+                #         inputs=[self.model.particle_flags, self.model.particle_inv_mass, self.model.particle_radius, self.swelling_rotation, inputs.swelling_rotation_max*inputs.solverUpdates, inputs.radius/inputs.xRef], 
+                #         device=self.model.device)
+
+                wp.launch(kernel=fs5WarpOverrides.increaseRadius, 
                         dim=self.model.particle_count, 
-                        inputs=[self.model.particle_flags, self.model.particle_inv_mass, self.model.particle_radius, self.swelling_rotation, inputs.swelling_rotation_max*inputs.solverUpdates, inputs.radius/inputs.xRef], 
+                        inputs=[self.model.particle_radius, (inputs.maxRadius/inputs.xRef-inputs.radius/inputs.xRef)/inputs.swelling_rotation_max/inputs.solverUpdates,inputs.maxRadius/inputs.xRef], 
                         device=self.model.device)
 
             wp.launch(kernel=fs5WarpOverrides.sleepParticles, 
@@ -229,21 +234,21 @@ if __name__ == '__main__':
     # print("Positions of particles inside the mesh:", positions)
 
     # create the swelling dataset
-    if inputs.swellingRatio > 0:
-        total_particles_to_add = int((len(positions)+1) * inputs.swellingRatio)
-        swell_particles = np.sort(np.random.choice(len(positions)-1, total_particles_to_add, replace=False)) + 1
-        swell_particles += np.arange(len(swell_particles))
+    # if inputs.swellingRatio > 0:
+    #     total_particles_to_add = int((len(positions)+1) * inputs.swellingRatio)
+    #     swell_particles = np.sort(np.random.choice(len(positions)-1, total_particles_to_add, replace=False)) + 1
+    #     swell_particles += np.arange(len(swell_particles))
 
 
-        out_dim = len(positions)+len(swell_particles)
-        delta_a = np.ones(out_dim, dtype=bool)
-        delta_a[swell_particles] = 0
-        delta_particles = np.zeros((out_dim, 3))
-        delta_particles[delta_a] = positions
-        delta_particles[swell_particles] = delta_particles[swell_particles-1]
-    else:
-        delta_a = np.ones(positions.shape[0], dtype=bool)
-        delta_particles=positions
+    #     out_dim = len(positions)+len(swell_particles)
+    #     delta_a = np.ones(out_dim, dtype=bool)
+    #     delta_a[swell_particles] = 0
+    #     delta_particles = np.zeros((out_dim, 3))
+    #     delta_particles[delta_a] = positions
+    #     delta_particles[swell_particles] = delta_particles[swell_particles-1]
+    # else:
+    delta_a = np.ones(positions.shape[0], dtype=bool)
+    delta_particles=positions
 
     # set up the warp simulation
     wp.config.kernel_cache_dir = os.path.join("tmp", f"warpcache")
@@ -266,7 +271,7 @@ if __name__ == '__main__':
                 simState.state_0.particle_qd.zero_()
                 simState.state_1.particle_qd.zero_()
 
-        if inputs.swellingRatio > 0:
-            simState.swell(inputs)
+        # if inputs.swellingRatio > 0:
+        #     simState.swell(inputs)
 
         # save particle positions and masses 

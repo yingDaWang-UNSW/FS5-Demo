@@ -40,7 +40,7 @@ def fs5args():
     parser.add_argument("--runtimeRendering", type=str2bool, default=True) 
     parser.add_argument("--radius", type=str2float, default=0.5) 
     parser.add_argument("--particleMass", type=str2float, default=10000) 
-    parser.add_argument("--swellingRatio", type=str2float, default=0.0)
+    parser.add_argument("--swellingRatio", type=str2float, default=0.2)
     parser.add_argument("--dynamicParticleFriction", type=str2float, default=0.1) 
     parser.add_argument("--staticParticleFriction", type=str2float, default=0.2) 
     parser.add_argument("--dynamicSurfaceFriction", type=str2float, default=0.15) 
@@ -69,4 +69,5 @@ def fs5args():
     inputs.framesPerRuntimeRender=1
     inputs.swellingActivationFactor=4
     inputs.swellingActivationLocationRatio=0
+    inputs.maxRadius=inputs.radius*((1+inputs.swellingRatio)**0.3333)
     return inputs
