@@ -24,7 +24,7 @@ echo Python installed successfully.
 
 :installPackages
 echo Installing required Python packages from local directory...
-%PIP_EXE% install --no-index --find-links="%PACKAGE_DIR%" warp-lang pyglet trimesh meshio Rtree gooey matplotlib
+%PIP_EXE% install --no-index --find-links="%PACKAGE_DIR%" --upgrade warp-lang pyglet trimesh meshio Rtree gooey matplotlib
 if %ERRORLEVEL% neq 0 (
     echo Failed to install packages.
     goto end
