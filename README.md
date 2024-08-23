@@ -14,9 +14,11 @@ https://www.nvidia.com/download/index.aspx
 
 https://developer.nvidia.com/cuda-downloads?target_os=Windows&target_arch=x86_64
 
-2. double-click install.bat
+2. download and extract the program https://github.com/yingDaWang-UNSW/FS5-Demo/archive/refs/heads/main.zip
 
-3. double-click run.bat
+3. double-click install.bat
+
+4. double-click run.bat
 
 
 ## Installation - CONDA/PIP
