@@ -317,7 +317,7 @@ for pp_step in range(inputs.max_steps_per_stage//inputs.solverUpdates):
         if np.mod(s,inputs.framesPerRuntimeRender)==0:
             if inputs.runtimeRendering:
                 simState.render(inputs)
-        if pp_step==0 and s==0:
+        if pp_step==0:
             simState.state_0.particle_qd.zero_()
             simState.state_1.particle_qd.zero_()
 

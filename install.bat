@@ -15,7 +15,7 @@ goto installPackages
 :installPython
 echo Python is not installed.
 echo Using local Python installer...
-start /wait .\pkgs\python-3.12.5-amd64.exe /quiet InstallAllUsers=0 PrependPath=1
+start /wait %~dp0\pkgs\python-3.12.5-amd64.exe /quiet InstallAllUsers=0 PrependPath=1
 if %ERRORLEVEL% neq 0 (
     echo Failed to install Python.
     goto end
