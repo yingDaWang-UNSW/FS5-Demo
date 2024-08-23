@@ -12,10 +12,10 @@ This is an open source demo of FS5, which runs on single GPUs. It is capable of 
 
 https://www.nvidia.com/download/index.aspx
 
-https://developer.nvidia.com/cuda-downloads?target_os=Windows
-&target_arch=x86_64
+https://developer.nvidia.com/cuda-downloads?target_os=Windows&target_arch=x86_64
 
 2. double-click install.bat
+
 3. double-click run.bat
 
 
