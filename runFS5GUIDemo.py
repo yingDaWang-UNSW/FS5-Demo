@@ -180,21 +180,35 @@ def process_mesh(ply_path, voxel_size, jitter):
     return points[:,[0,2,1]]
 
 def read_ply(filename):
-    with open(filename, 'r') as f:
-        lines = f.readlines()
-    if lines[0].strip() != "ply":
-        raise ValueError("This is not a PLY file.")
-    vertex_count = int(lines[[i for i, line in enumerate(lines) if "element vertex" in line][0]].split()[2])
-    face_count = int(lines[[i for i, line in enumerate(lines) if "element face" in line][0]].split()[2])
-    start_index = lines.index("end_header\n") + 1
-    nodes = np.array([list(map(float, line.strip().split())) for line in lines[start_index:start_index+vertex_count]])
-    face_start_index = start_index + vertex_count
-    elements = []
-    for line in lines[face_start_index:face_start_index+face_count]:
-        face_data = list(map(int, line.strip().split()))
-        elements.append(face_data[1:])
-    elements = np.array(elements)
-    return nodes, elements
+    n_vertexes = np.nan
+    n_faces = np.nan
+    with open(filename) as file:
+        for n, line in enumerate(file):
+            if line.startswith("element vertex "):
+                n_vertexes = int(line[15:])
+            elif line.startswith("element face "):
+                n_faces = int(line[13:])
+            elif line.startswith("end_header"):
+                break
+        file.seek(0)
+        lines = file.readlines()
+        lines = [line.rstrip() for line in lines][n+1:]    
+        points = np.loadtxt(lines[:n_vertexes])
+        indices = []
+        for line in lines[n_vertexes:n_vertexes+n_faces]:
+            if line.startswith('3'):
+                line=np.fromstring(line[2:], dtype=int, sep=' ')
+                indices.append(line)
+            elif line.startswith('4'):
+                _temp = np.fromstring(line[2:], dtype=int, sep=' ')
+                indices.append(_temp[[0,1,2]])
+                indices.append(_temp[[0,2,3]])
+            else:
+                print('Error loading mesh')
+                raise
+        indices = np.array(indices)
+        indices = indices.reshape(-1)
+    return points, indices  
 
 def generate_displacements_np(r, n):
     # Generate random radii, dip angles, and azimuth angles
@@ -295,7 +309,7 @@ simState = simulationStage(inputs,Vs,Fs.flatten(),delta_particles,delta_a)
 
 for pp_step in range(inputs.max_steps_per_stage//inputs.solverUpdates):
     # simState.state_init_frame=simState.state_0
-    print(f'GPU Compute...frame {pp_step}')
+    print(f'Computing...frame {pp_step}')
     # simulate
     for s in range(inputs.solverUpdates):
         simState.update(inputs)
@@ -312,7 +326,7 @@ for pp_step in range(inputs.max_steps_per_stage//inputs.solverUpdates):
 
     # save particle positions and masses periodically
     if np.mod(pp_step,10)==0:
-        filename = f"particles_{pp_step+1:04d}.bin"
+        filename = f"./outputs/particles_{pp_step+1:04d}.bin"
         particle_q = simState.state_0.particle_q.numpy()
         particle_inv_mass = simState.model.particle_inv_mass.numpy() 
         particle_inv_mass = particle_inv_mass.reshape(-1, 1)

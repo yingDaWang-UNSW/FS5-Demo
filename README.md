@@ -6,11 +6,25 @@ It is written in Python, allowing for faster prototyping and modification, more 
 
 This is an open source demo of FS5, which runs on single GPUs. It is capable of 5 million particles per GB of memory, and approximately 25 million particle updates per second on an RTX 2080ti
 
-## Installation
+
+## Installation - Windows Python
+1. Install the latest Nvidia graphics drivers and Cuda Framework.
+
+https://www.nvidia.com/download/index.aspx
+
+https://developer.nvidia.com/cuda-downloads?target_os=Windows
+&target_arch=x86_64
+
+2. double-click install.bat
+3. double-click run.bat
+
+
+## Installation - CONDA/PIP
 
 1.  install nvidia drivers and cuda toolkit (via website), confirm installation with nvidia-smi command
 2.  conda install python
 3.  pip install warp-lang pyglet trimesh meshio Rtree gooey matplotlib
+4.  python runFS5GUIDemo.py
 
 ## Known bugs
 
