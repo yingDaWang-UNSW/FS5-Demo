@@ -172,6 +172,10 @@ def my_apply_particle_deltas(
     v_new_mag = wp.length(v_new)
     if v_new_mag > v_max:
         v_new *= v_max / v_new_mag
+    # if wp.length(d)>0.0002:
+    #     v_new[0]=0.0
+    #     v_new[1]=0.0
+    #     v_new[2]=0.0
     x_out[tid] = x_new
     v_out[tid] = v_new
 utl.integrator_xpbd.apply_particle_deltas = my_apply_particle_deltas
@@ -254,6 +258,8 @@ def my_solve_particle_particle_contacts(
             w2 = particle_invmass[index]
             denom = w1 + w2
             if err <= k_cohesion and denom > 0.0:
+                # if err<=radius*-0.1:
+                #     factor=0.01
                 n = n / d
                 vrel = v - particle_v[index]
                 lambda_n = err
@@ -264,7 +270,7 @@ def my_solve_particle_particle_contacts(
                 vt = v - n * vn
                 lambda_f = wp.max(k_mu * lambda_n, -wp.length(vt) * dt)
                 delta_f = wp.normalize(vt) * lambda_f
-                delta += (delta_f - delta_n) / denom * w1
+                delta += (delta_f - delta_n) / denom * w1 * factor
     wp.atomic_add(deltas, i, delta * relaxation)
 utl.integrator_xpbd.solve_particle_particle_contacts = my_solve_particle_particle_contacts
 @wp.kernel

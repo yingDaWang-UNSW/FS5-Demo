@@ -4,3 +4,5 @@ warpOverrides/__pycache__/*
 particles_*.bin
 utils/__pycache__/fs5InputReader.cpython-312.pyc
 *pointcloud.obj
+utils/__pycache__/fs5InputReader.cpython-312.pyc
+warpOverrides/__pycache__/fs5WarpOverrides.cpython-312.pyc

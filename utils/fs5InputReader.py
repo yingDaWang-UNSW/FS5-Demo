@@ -37,7 +37,7 @@ def fs5args():
     parser.add_argument("--surfaceMesh", widget="FileChooser", type=str, default=surface_mesh_path, help="PLY file of surface")
     parser.add_argument("--particleMesh", widget="FileChooser", type=str, default=particle_mesh_path, help="PLY file of particle volume")
     parser.add_argument("--gpuIDs", type=str, default='0', help="GPU ID")
-    parser.add_argument("--runtimeRendering", type=str2bool, default=True) 
+    parser.add_argument("--runtimeRendering", metavar='Runtime Rendering', type=str2bool, default=True, choices=[True, False], help="Enable or disable runtime rendering")
     parser.add_argument("--radius", type=str2float, default=0.5) 
     parser.add_argument("--particleMass", type=str2float, default=10000) 
     parser.add_argument("--swellingRatio", type=str2float, default=0.2)
